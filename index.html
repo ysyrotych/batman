@@ -753,11 +753,25 @@ function checkStreak(){
   const streak=load('bgt_streak',{current:0,longest:0,lastWorkoutDate:null,lastCheckedDate:null});
   const today=getToday();
   if(streak.lastCheckedDate===today) return streak;
-  const yesterday=getDateISO(new Date(Date.now()-86400000));
-  if(!isRestDay(yesterday)){
-    const workouts=load('bgt_workouts',{});
-    const yw=workouts[yesterday];
-    if((!yw||!yw.completed)&&streak.current>0){
+  // Only penalize if there was an active streak AND the last workout date is known
+  // This prevents fresh installs from triggering a broken streak
+  if(streak.current>0&&streak.lastWorkoutDate){
+    const yesterday=getDateISO(new Date(Date.now()-86400000));
+    const lastDate=streak.lastWorkoutDate;
+    // Check if more than 1 non-rest day has passed since last workout
+    let missed=false;
+    let check=new Date(lastDate+'T12:00:00');
+    check.setDate(check.getDate()+1);
+    const todayDate=new Date(today+'T12:00:00');
+    while(check<todayDate){
+      const iso=getDateISO(check);
+      if(!isRestDay(iso)){
+        const workouts=load('bgt_workouts',{});
+        if(!workouts[iso]||!workouts[iso].completed){missed=true;break}
+      }
+      check.setDate(check.getDate()+1);
+    }
+    if(missed){
       const prev=streak.current;streak.current=0;
       save('bgt_streak',{...streak,lastCheckedDate:today});
       showStreakBroken(prev);return streak;
@@ -849,7 +863,8 @@ function renderWeekDots(workouts){
       } else if(d<today){
         const w=workouts[iso];
         if(w&&w.completed){dot.classList.add('done');completed++}
-        else if(d<today){dot.classList.add('missed')}
+        else if(w&&!w.completed){dot.classList.add('missed')}
+        // no dot class = gray (never opened) — not a miss
       }
     }
     container.appendChild(dot);
