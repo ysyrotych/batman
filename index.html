@@ -250,6 +250,10 @@ select{-webkit-appearance:none;appearance:none}
     <div class="streak-number" id="dashStreak">0</div>
     <div class="streak-label" id="dashStreakLabel">🔥 DAYS IN A ROW</div>
     <div class="streak-sub" id="dashStreakSub"></div>
+    <div style="margin-top:14px;display:flex;justify-content:center;gap:10px">
+      <button onclick="useStreakFreeze()" id="freezeBtn" style="background:#1a1040;border:1px solid #3a1a6a;border-radius:10px;color:#a78bfa;font-size:12px;font-weight:700;padding:7px 14px;cursor:pointer">🧊 Freeze Streak</button>
+      <span id="freezeCount" style="font-size:12px;color:var(--muted2);display:flex;align-items:center"></span>
+    </div>
   </div>
   <div class="card">
     <div class="card-label">Today's Mission</div>
@@ -257,10 +261,14 @@ select{-webkit-appearance:none;appearance:none}
     <div style="font-size:13px;color:var(--muted2);margin-bottom:12px" id="dashExerciseCount"></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-orange" style="flex:1" onclick="goToWorkout()" id="dashWorkoutBtn">START WORKOUT</button>
+      <button id="moveBtn" onclick="moveWorkoutToTomorrow()" style="background:var(--bg3);border:1px solid var(--border);border-radius:13px;color:var(--muted2);font-size:12px;font-weight:700;padding:0 14px;cursor:pointer;white-space:nowrap">Move →</button>
     </div>
   </div>
-  <div class="card">
-    <div class="card-label">This Week</div>
+  <div class="card" style="cursor:pointer" onclick="openWeekPlan()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="card-label" style="margin-bottom:0">This Week</div>
+      <span style="font-size:11px;color:var(--orange);font-weight:700">VIEW PLAN ›</span>
+    </div>
     <div class="week-dots" id="weekDots"></div>
     <div style="margin-top:9px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:12px;color:var(--muted2)" id="weekProgressText"></span>
@@ -560,6 +568,29 @@ select{-webkit-appearance:none;appearance:none}
   </div>
 </div>
 
+<!-- WEEK PLAN MODAL -->
+<div id="weekPlanModal" class="hidden" style="position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);display:flex;align-items:flex-end" onclick="if(event.target===this)closeWeekPlan()">
+  <div style="background:var(--bg2);border-radius:24px 24px 0 0;border-top:1px solid var(--border);width:100%;max-width:500px;margin:0 auto;padding:20px 20px 40px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:17px;font-weight:900">📅 This Week's Plan</div>
+      <button onclick="closeWeekPlan()" style="background:var(--bg3);border:none;border-radius:50%;width:30px;height:30px;color:var(--muted2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">Tap <b style="color:var(--text)">Change</b> on any day to reassign its workout. Changes only affect this week.</div>
+    <div id="weekPlanGrid"></div>
+  </div>
+</div>
+
+<!-- DAY PICKER MODAL -->
+<div id="dayPickerModal" class="hidden" style="position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeDayPicker()">
+  <div style="background:var(--bg2);border-radius:20px;border:1px solid var(--border);width:100%;max-width:380px;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:900" id="dayPickerTitle">Change Workout</div>
+      <button onclick="closeDayPicker()" style="background:var(--bg3);border:none;border-radius:50%;width:30px;height:30px;color:var(--muted2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+    <div id="dayPickerOptions"></div>
+  </div>
+</div>
+
 <!-- NAV -->
 <nav>
   <button class="active" onclick="showPage('dashboard')" id="nav-dashboard">
@@ -655,8 +686,18 @@ function saveSettings(s){save('bgt_settings',s)}
 function getToday(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function getDateISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function getDayOfWeek(iso){return new Date(iso+'T12:00:00').getDay()}
-function getTodaySplit(){return SPLIT[new Date().getDay()]}
-function isRestDay(iso){return getDayOfWeek(iso)===4}
+
+// Returns the split for a specific date, respecting date-level overrides
+function getSplitForDate(iso){
+  const overrides=load('bgt_date_overrides',{});
+  if(iso in overrides){
+    const key=overrides[iso];
+    return key===null?null:SPLIT[key];
+  }
+  return SPLIT[getDayOfWeek(iso)];
+}
+function getTodaySplit(){return getSplitForDate(getToday())}
+function isRestDay(iso){return getSplitForDate(iso)===null}
 
 // ==================== VOLUME ====================
 function calcWorkoutVolume(wo){
@@ -756,25 +797,29 @@ function checkStreak(){
   // Only penalize if there was an active streak AND the last workout date is known
   // This prevents fresh installs from triggering a broken streak
   if(streak.current>0&&streak.lastWorkoutDate){
-    const yesterday=getDateISO(new Date(Date.now()-86400000));
     const lastDate=streak.lastWorkoutDate;
-    // Check if more than 1 non-rest day has passed since last workout
-    let missed=false;
+    let missedDate=null;
     let check=new Date(lastDate+'T12:00:00');
     check.setDate(check.getDate()+1);
     const todayDate=new Date(today+'T12:00:00');
+    const workouts=load('bgt_workouts',{});
     while(check<todayDate){
       const iso=getDateISO(check);
-      if(!isRestDay(iso)){
-        const workouts=load('bgt_workouts',{});
-        if(!workouts[iso]||!workouts[iso].completed){missed=true;break}
-      }
+      if(!isRestDay(iso)&&(!workouts[iso]||!workouts[iso].completed)){missedDate=iso;break}
       check.setDate(check.getDate()+1);
     }
-    if(missed){
-      const prev=streak.current;streak.current=0;
-      save('bgt_streak',{...streak,lastCheckedDate:today});
-      showStreakBroken(prev);return streak;
+    if(missedDate){
+      const freeze=load('bgt_freeze',{count:1,usedDates:[]});
+      if(freeze.count>0&&!freeze.usedDates.includes(missedDate)){
+        // Auto-consume a freeze for the missed day
+        freeze.count--;freeze.usedDates.push(missedDate);
+        save('bgt_freeze',freeze);
+        showFreezeUsed(missedDate);
+      } else {
+        const prev=streak.current;streak.current=0;
+        save('bgt_streak',{...streak,lastCheckedDate:today});
+        showStreakBroken(prev);return streak;
+      }
     }
   }
   streak.lastCheckedDate=today;save('bgt_streak',streak);return streak;
@@ -785,7 +830,14 @@ function incrementStreak(){
   if(streak.lastWorkoutDate===today) return streak;
   streak.current+=1;streak.lastWorkoutDate=today;
   if(streak.current>streak.longest) streak.longest=streak.current;
-  save('bgt_streak',streak);return streak;
+  save('bgt_streak',streak);
+  // Award a freeze at milestone days
+  if([7,30,60,100].includes(streak.current)){
+    const freeze=load('bgt_freeze',{count:1,usedDates:[]});
+    freeze.count++;
+    save('bgt_freeze',freeze);
+  }
+  return streak;
 }
 function showStreakBroken(prev){
   document.getElementById('streakBrokenMsg').textContent=`You missed a workout. Your ${prev}-day streak has been reset to 0.`;
@@ -833,6 +885,17 @@ function renderDashboard(){
     btnEl.textContent=done?'✅ COMPLETED':completedCount>0?'CONTINUE WORKOUT':'START WORKOUT';
     btnEl.disabled=false;
   }
+  // Move button — hide on rest days or completed workouts
+  const moveBtn=document.getElementById('moveBtn');
+  if(moveBtn) moveBtn.style.display=(!todaySplit||(todayWo&&todayWo.completed))?'none':'';
+
+  // Freeze count
+  const freeze=load('bgt_freeze',{count:1,usedDates:[]});
+  const freezeCountEl=document.getElementById('freezeCount');
+  if(freezeCountEl) freezeCountEl.textContent=`${freeze.count} freeze${freeze.count!==1?'s':''} left`;
+  const freezeBtn=document.getElementById('freezeBtn');
+  if(freezeBtn) freezeBtn.style.opacity=freeze.count>0?'1':'0.4';
+
   renderWeekDots(workouts);
   const total=Object.values(workouts).filter(w=>w&&w.completed).length;
   document.getElementById('totalWorkoutsStat').textContent=total;
@@ -1137,6 +1200,154 @@ function showMilestoneOverlay(icon,title,desc){
   document.getElementById('milestoneOverlay').classList.remove('hidden');
   document.getElementById('celebrationOverlay').classList.add('hidden');
   if(typeof confetti!=='undefined') confetti({particleCount:200,spread:120,origin:{y:0.5},colors:['#FF6B00','#FFB800','#00E87A','#FFFFFF']});
+}
+
+// ==================== STREAK FREEZE ====================
+function showFreezeUsed(date){
+  const d=new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  const banner=document.createElement('div');
+  banner.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a1040;border:1px solid #6b3fff;border-radius:14px;padding:12px 20px;z-index:400;font-size:13px;font-weight:700;color:#a78bfa;text-align:center;max-width:300px';
+  banner.textContent=`🧊 Streak freeze used for ${d}`;
+  document.body.appendChild(banner);
+  setTimeout(()=>banner.remove(),3500);
+}
+
+function useStreakFreeze(){
+  const freeze=load('bgt_freeze',{count:1,usedDates:[]});
+  if(freeze.count<=0){alert('No streak freezes available. Complete milestones to earn more.');return}
+  if(!confirm(`Use a streak freeze? You have ${freeze.count}. This protects your streak if you miss tomorrow's workout.`)) return;
+  const tomorrow=getDateISO(new Date(Date.now()+86400000));
+  if(freeze.usedDates.includes(tomorrow)){alert('Tomorrow is already frozen.');return}
+  freeze.count--;freeze.usedDates.push(tomorrow);
+  save('bgt_freeze',freeze);
+  renderDashboard();
+  const banner=document.createElement('div');
+  banner.style.cssText='position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1a1040;border:1px solid #6b3fff;border-radius:14px;padding:12px 20px;z-index:400;font-size:13px;font-weight:700;color:#a78bfa;text-align:center;max-width:300px';
+  banner.textContent=`🧊 Streak frozen for tomorrow`;
+  document.body.appendChild(banner);
+  setTimeout(()=>banner.remove(),3000);
+}
+
+function getFreezeCount(){
+  // Earn extra freezes at milestones
+  const streak=load('bgt_streak',{current:0,longest:0});
+  const base=load('bgt_freeze',{count:1,usedDates:{}});
+  const bonus=[7,30,60,100].filter(m=>streak.longest>=m).length;
+  return {available:base.count+bonus, used:base.usedDates};
+}
+
+// ==================== WEEK PLAN MODAL ====================
+const SPLIT_KEYS=[
+  {key:1,name:'Chest + Shoulders',tag:'💪 PUSH'},
+  {key:2,name:'Back + Biceps',tag:'💪 PULL'},
+  {key:3,name:'Legs',tag:'🦵 LEGS'},
+  {key:null,name:'Rest Day',tag:'😴 REST'},
+];
+const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAY_FULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function openWeekPlan(){
+  const modal=document.getElementById('weekPlanModal');
+  renderWeekPlanModal();
+  modal.classList.remove('hidden');
+}
+function closeWeekPlan(){document.getElementById('weekPlanModal').classList.add('hidden')}
+
+function renderWeekPlanModal(){
+  const overrides=load('bgt_date_overrides',{});
+  const today=new Date();
+  const monday=new Date(today);monday.setDate(today.getDate()-((today.getDay()+6)%7));
+  const grid=document.getElementById('weekPlanGrid');
+  grid.innerHTML='';
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const iso=getDateISO(d);
+    const isToday=iso===getToday();
+    const split=getSplitForDate(iso);
+    const isOverridden=iso in overrides;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)';
+    if(i===6) row.style.borderBottom='none';
+    // Day label
+    const dayLabel=document.createElement('div');
+    dayLabel.style.cssText=`width:38px;font-size:12px;font-weight:800;color:${isToday?'var(--orange)':'var(--muted2)'}`;
+    dayLabel.textContent=DAY_NAMES[d.getDay()]+(isToday?' ←':'');
+    // Workout badge
+    const badge=document.createElement('div');
+    badge.style.cssText='flex:1;font-size:13px;font-weight:700;color:var(--text)';
+    badge.textContent=split?(split.tag+' — '+split.name):'😴 Rest Day';
+    if(isOverridden){
+      const tag=document.createElement('span');
+      tag.style.cssText='font-size:10px;color:var(--purple);background:#1a0a2a;border:1px solid #3a1a5a;padding:2px 6px;border-radius:5px;margin-left:6px;font-weight:700';
+      tag.textContent='MOVED';
+      badge.appendChild(tag);
+    }
+    // Change button
+    const changeBtn=document.createElement('button');
+    changeBtn.style.cssText='background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted2);font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer';
+    changeBtn.textContent='Change';
+    changeBtn.onclick=()=>openDayPicker(iso,d.getDay());
+    row.appendChild(dayLabel);row.appendChild(badge);row.appendChild(changeBtn);
+    grid.appendChild(row);
+  }
+}
+
+function openDayPicker(iso,dow){
+  const picker=document.getElementById('dayPickerModal');
+  document.getElementById('dayPickerTitle').textContent=`Change ${DAY_FULL[dow]}'s Workout`;
+  const opts=document.getElementById('dayPickerOptions');
+  opts.innerHTML='';
+  const current=getSplitForDate(iso);
+  SPLIT_KEYS.forEach(s=>{
+    const btn=document.createElement('button');
+    const isActive=(!current&&s.key===null)||(current&&current.name===s.name);
+    btn.style.cssText=`width:100%;background:${isActive?'#2a1200':'var(--bg3)'};border:1px solid ${isActive?'var(--orange)':'var(--border)'};border-radius:12px;color:${isActive?'var(--orange)':'var(--text)'};font-size:14px;font-weight:700;padding:13px;cursor:pointer;margin-bottom:8px;text-align:left`;
+    btn.textContent=(s.key===null?'😴':'💪')+' '+s.name;
+    btn.onclick=()=>{setDayOverride(iso,s.key);closeDayPicker();renderWeekPlanModal()};
+    opts.appendChild(btn);
+  });
+  // Reset button if overridden
+  const overrides=load('bgt_date_overrides',{});
+  if(iso in overrides){
+    const reset=document.createElement('button');
+    reset.style.cssText='width:100%;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted2);font-size:13px;font-weight:700;padding:11px;cursor:pointer;margin-top:4px';
+    reset.textContent='↩ Reset to default';
+    reset.onclick=()=>{removeDayOverride(iso);closeDayPicker();renderWeekPlanModal()};
+    opts.appendChild(reset);
+  }
+  picker.classList.remove('hidden');
+}
+function closeDayPicker(){document.getElementById('dayPickerModal').classList.add('hidden')}
+
+function setDayOverride(iso,splitKey){
+  const overrides=load('bgt_date_overrides',{});
+  overrides[iso]=splitKey;
+  save('bgt_date_overrides',overrides);
+  renderDashboard();
+}
+function removeDayOverride(iso){
+  const overrides=load('bgt_date_overrides',{});
+  delete overrides[iso];
+  save('bgt_date_overrides',overrides);
+  renderDashboard();
+}
+
+// ==================== MOVE WORKOUT ====================
+function moveWorkoutToTomorrow(){
+  const today=getToday();
+  const tomorrow=getDateISO(new Date(Date.now()+86400000));
+  const todaySplit=getTodaySplit();
+  if(!todaySplit){alert("Today is already a rest day.");return}
+  const tomorrowSplit=getSplitForDate(tomorrow);
+  // Find the SPLIT key for today's workout
+  const todayKey=Object.entries(SPLIT).find(([k,v])=>v&&v.name===todaySplit.name)?.[0];
+  if(!confirm(`Move ${todaySplit.name} from today to tomorrow?\n\nToday becomes rest. Tomorrow's workout${tomorrowSplit?' ('+tomorrowSplit.name+') will be replaced':' will be set to '+todaySplit.name}.`)) return;
+  const overrides=load('bgt_date_overrides',{});
+  overrides[today]=null; // today becomes rest
+  overrides[tomorrow]=parseInt(todayKey); // tomorrow gets today's workout
+  save('bgt_date_overrides',overrides);
+  renderDashboard();
+  showPage('dashboard');
 }
 
 // ==================== PROGRESSIVE OVERLOAD ====================
