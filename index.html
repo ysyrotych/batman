@@ -569,26 +569,24 @@ select{-webkit-appearance:none;appearance:none}
 </div>
 
 <!-- WEEK PLAN MODAL -->
-<div id="weekPlanModal" class="hidden" style="position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);display:flex;align-items:flex-end" onclick="if(event.target===this)closeWeekPlan()">
-  <div style="background:var(--bg2);border-radius:24px 24px 0 0;border-top:1px solid var(--border);width:100%;max-width:500px;margin:0 auto;padding:20px 20px 40px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:17px;font-weight:900">📅 This Week's Plan</div>
-      <button onclick="closeWeekPlan()" style="background:var(--bg3);border:none;border-radius:50%;width:30px;height:30px;color:var(--muted2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
-    </div>
-    <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">Tap <b style="color:var(--text)">Change</b> on any day to reassign its workout. Changes only affect this week.</div>
-    <div id="weekPlanGrid"></div>
+<div id="weekPlanBackdrop" class="hidden" style="position:fixed;inset:0;z-index:249;background:rgba(0,0,0,0.6)" onclick="closeWeekPlan()"></div>
+<div id="weekPlanModal" class="hidden" style="position:fixed;bottom:0;left:0;right:0;z-index:250;background:var(--bg2);border-radius:24px 24px 0 0;border-top:1px solid var(--border);max-width:500px;margin:0 auto;padding:20px 20px 44px;max-height:85vh;overflow-y:auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:17px;font-weight:900">📅 This Week's Plan</div>
+    <button type="button" onclick="closeWeekPlan()" style="background:var(--bg3);border:none;border-radius:50%;width:32px;height:32px;color:var(--muted2);font-size:20px;cursor:pointer;touch-action:manipulation">×</button>
   </div>
+  <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">Tap <b style="color:var(--text)">Change</b> on any day to reassign its workout.</div>
+  <div id="weekPlanGrid"></div>
 </div>
 
 <!-- DAY PICKER MODAL -->
-<div id="dayPickerModal" class="hidden" style="position:fixed;inset:0;z-index:260;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)closeDayPicker()">
-  <div style="background:var(--bg2);border-radius:20px;border:1px solid var(--border);width:100%;max-width:380px;padding:20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:15px;font-weight:900" id="dayPickerTitle">Change Workout</div>
-      <button onclick="closeDayPicker()" style="background:var(--bg3);border:none;border-radius:50%;width:30px;height:30px;color:var(--muted2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
-    </div>
-    <div id="dayPickerOptions"></div>
+<div id="dayPickerBackdrop" class="hidden" style="position:fixed;inset:0;z-index:259;background:rgba(0,0,0,0.5)" onclick="closeDayPicker()"></div>
+<div id="dayPickerModal" class="hidden" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:260;background:var(--bg2);border-radius:20px;border:1px solid var(--border);width:calc(100% - 48px);max-width:380px;padding:20px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:15px;font-weight:900" id="dayPickerTitle">Change Workout</div>
+    <button type="button" onclick="closeDayPicker()" style="background:var(--bg3);border:none;border-radius:50%;width:32px;height:32px;color:var(--muted2);font-size:20px;cursor:pointer;touch-action:manipulation">×</button>
   </div>
+  <div id="dayPickerOptions"></div>
 </div>
 
 <!-- NAV -->
@@ -1247,11 +1245,14 @@ const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAY_FULL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 function openWeekPlan(){
-  const modal=document.getElementById('weekPlanModal');
   renderWeekPlanModal();
-  modal.classList.remove('hidden');
+  document.getElementById('weekPlanModal').classList.remove('hidden');
+  document.getElementById('weekPlanBackdrop').classList.remove('hidden');
 }
-function closeWeekPlan(){document.getElementById('weekPlanModal').classList.add('hidden')}
+function closeWeekPlan(){
+  document.getElementById('weekPlanModal').classList.add('hidden');
+  document.getElementById('weekPlanBackdrop').classList.add('hidden');
+}
 
 function renderWeekPlanModal(){
   const overrides=load('bgt_date_overrides',{});
@@ -1300,10 +1301,12 @@ function openDayPicker(iso,dow){
   const current=getSplitForDate(iso);
   SPLIT_KEYS.forEach(s=>{
     const btn=document.createElement('button');
+    btn.type='button';
     const isActive=(!current&&s.key===null)||(current&&current.name===s.name);
-    btn.style.cssText=`width:100%;background:${isActive?'#2a1200':'var(--bg3)'};border:1px solid ${isActive?'var(--orange)':'var(--border)'};border-radius:12px;color:${isActive?'var(--orange)':'var(--text)'};font-size:14px;font-weight:700;padding:13px;cursor:pointer;margin-bottom:8px;text-align:left`;
+    btn.style.cssText=`width:100%;background:${isActive?'#2a1200':'var(--bg3)'};border:1px solid ${isActive?'var(--orange)':'var(--border)'};border-radius:12px;color:${isActive?'var(--orange)':'var(--text)'};font-size:14px;font-weight:700;padding:13px;cursor:pointer;margin-bottom:8px;text-align:left;touch-action:manipulation;-webkit-tap-highlight-color:rgba(255,107,0,0.2)`;
     btn.textContent=(s.key===null?'😴':'💪')+' '+s.name;
-    btn.onclick=()=>{setDayOverride(iso,s.key);closeDayPicker();renderWeekPlanModal()};
+    const capturedKey=s.key;
+    btn.addEventListener('click',()=>{setDayOverride(iso,capturedKey);closeDayPicker();renderWeekPlanModal()});
     opts.appendChild(btn);
   });
   // Reset button if overridden
@@ -1312,12 +1315,18 @@ function openDayPicker(iso,dow){
     const reset=document.createElement('button');
     reset.style.cssText='width:100%;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted2);font-size:13px;font-weight:700;padding:11px;cursor:pointer;margin-top:4px';
     reset.textContent='↩ Reset to default';
-    reset.onclick=()=>{removeDayOverride(iso);closeDayPicker();renderWeekPlanModal()};
+    reset.type='button';
+    reset.style.touchAction='manipulation';
+    reset.addEventListener('click',()=>{removeDayOverride(iso);closeDayPicker();renderWeekPlanModal()});
     opts.appendChild(reset);
   }
   picker.classList.remove('hidden');
+  document.getElementById('dayPickerBackdrop').classList.remove('hidden');
 }
-function closeDayPicker(){document.getElementById('dayPickerModal').classList.add('hidden')}
+function closeDayPicker(){
+  document.getElementById('dayPickerModal').classList.add('hidden');
+  document.getElementById('dayPickerBackdrop').classList.add('hidden');
+}
 
 function setDayOverride(iso,splitKey){
   const overrides=load('bgt_date_overrides',{});
