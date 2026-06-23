@@ -60,8 +60,18 @@ nav button svg{width:21px;height:21px}
 .set-input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;font-weight:700;padding:8px 4px;text-align:center;width:100%;outline:none;transition:border-color 0.15s}
 .set-input:focus{border-color:var(--orange)}
 .set-input.done-inp{background:#0a1a0f;border-color:#1a3d22;color:var(--green)}
-.set-check{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;margin:0 auto;transition:all 0.15s;flex-shrink:0}
+.set-check{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;margin:0 auto;transition:all 0.2s;flex-shrink:0;touch-action:manipulation}
 .set-check.checked{background:var(--green);border-color:var(--green);color:#000}
+@keyframes setDone{0%{transform:scale(1)}40%{transform:scale(1.35)}70%{transform:scale(0.92)}100%{transform:scale(1)}}
+.set-check.pop{animation:setDone 0.35s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes rowFlash{0%{background:transparent}30%{background:rgba(0,232,122,0.12)}100%{background:transparent}}
+.set-row-flash{animation:rowFlash 0.6s ease}
+@keyframes prFlash{0%{background:transparent}30%{background:rgba(255,184,0,0.18)}100%{background:transparent}}
+.pr-row-flash{animation:prFlash 0.8s ease}
+@keyframes prPing{0%{transform:scale(0.8);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
+.inline-pr-badge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#2a1f00,#3d2e00);border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-size:10px;font-weight:900;padding:3px 8px;margin-left:6px;letter-spacing:0.3px;animation:prPing 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+.last-session-bar{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted2)}
+.last-session-bar strong{color:var(--text);font-weight:800}
 /* REST TIMER POPUP */
 .rest-popup{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:16px 20px;z-index:200;display:none;align-items:center;gap:14px;box-shadow:0 8px 40px rgba(0,0,0,0.6);min-width:300px}
 .rest-popup.visible{display:flex}
@@ -182,7 +192,19 @@ canvas{width:100%;border-radius:10px;display:block}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 input[type=number]::-webkit-inner-spin-button{opacity:0}
 select{-webkit-appearance:none;appearance:none}
-.workout-complete-bar{background:linear-gradient(135deg,#0a2a10,#0f3d18);border:1px solid #1a5a28;border-radius:14px;padding:16px;text-align:center;margin-bottom:10px}
+.workout-complete-bar{background:linear-gradient(135deg,#0a2a10,#0f3d18);border:1px solid #1a5a28;border-radius:14px;padding:20px;text-align:center;margin-bottom:10px}
+.complete-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:14px 0}
+.complete-stat{background:rgba(0,0,0,0.3);border-radius:10px;padding:10px 6px}
+.complete-stat-val{font-size:18px;font-weight:900;color:var(--green)}
+.complete-stat-lbl{font-size:9px;color:var(--muted2);font-weight:700;letter-spacing:1px;margin-top:2px}
+.ex-preview{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.ex-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--muted2);padding:4px 10px;font-weight:600}
+@keyframes countUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.count-up{animation:countUp 0.5s cubic-bezier(0.34,1.56,0.64,1) both}
+.stopwatch-bar{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;font-size:12px;color:var(--muted2);font-weight:700;letter-spacing:1px}
+.stopwatch-val{color:var(--orange);font-variant-numeric:tabular-nums}
+.vol-pr-banner{background:linear-gradient(135deg,#1a0a30,#2d1050);border:1px solid #5a2a90;border-radius:12px;padding:10px 14px;margin-top:10px;display:flex;align-items:center;gap:8px}
+.motivational{font-size:12px;color:var(--muted2);margin-top:6px;font-style:italic;letter-spacing:0.3px}
 .expand-detail{max-height:0;overflow:hidden;transition:max-height 0.3s ease}
 .expand-detail.open{max-height:600px}
 </style>
@@ -216,12 +238,13 @@ select{-webkit-appearance:none;appearance:none}
 
 <!-- CELEBRATION OVERLAY -->
 <div class="overlay celebration-overlay hidden" id="celebrationOverlay">
-  <div style="font-size:64px;margin-bottom:16px">💪</div>
-  <h2 style="color:var(--orange)">BEAST MODE<br>ACTIVATED</h2>
-  <p id="celebrationMsg" style="color:var(--gold);font-weight:800;font-size:20px">Streak extended!</p>
-  <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:6px" id="celebrationSub"></p>
-  <div id="celebVolume" style="margin-top:12px;font-size:14px;color:var(--muted2)"></div>
-  <button class="btn btn-orange" style="margin-top:28px;max-width:300px" onclick="document.getElementById('celebrationOverlay').classList.add('hidden')">LET'S GO 🦇</button>
+  <div style="font-size:56px;margin-bottom:12px" id="celebIcon">💪</div>
+  <h2 style="color:var(--orange)" id="celebTitle">WORKOUT<br>COMPLETE</h2>
+  <p id="celebrationMsg" style="color:var(--gold);font-weight:900;font-size:22px;margin-top:10px"></p>
+  <p style="font-size:13px;color:rgba(255,255,255,0.55);margin-top:6px" id="celebrationSub"></p>
+  <div id="celebStats" style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:280px"></div>
+  <div id="celebHighlight" style="margin-top:14px;font-size:13px;color:var(--muted2);line-height:1.6;text-align:center"></div>
+  <button class="btn btn-orange" style="margin-top:24px;max-width:300px" onclick="document.getElementById('celebrationOverlay').classList.add('hidden')">LET'S GO 🦇</button>
 </div>
 
 <!-- MILESTONE OVERLAY -->
@@ -249,6 +272,7 @@ select{-webkit-appearance:none;appearance:none}
     <div class="card-label">Current Streak</div>
     <div class="streak-number" id="dashStreak">0</div>
     <div class="streak-label" id="dashStreakLabel">🔥 DAYS IN A ROW</div>
+    <div class="motivational" id="dashMotivational"></div>
     <div class="streak-sub" id="dashStreakSub"></div>
     <div style="margin-top:14px;display:flex;justify-content:center;gap:10px">
       <button onclick="useStreakFreeze()" id="freezeBtn" style="background:#1a1040;border:1px solid #3a1a6a;border-radius:10px;color:#a78bfa;font-size:12px;font-weight:700;padding:7px 14px;cursor:pointer">🧊 Freeze Streak</button>
@@ -258,8 +282,9 @@ select{-webkit-appearance:none;appearance:none}
   <div class="card">
     <div class="card-label">Today's Mission</div>
     <div id="dashTodayBadge"></div>
-    <div style="font-size:13px;color:var(--muted2);margin-bottom:12px" id="dashExerciseCount"></div>
-    <div style="display:flex;gap:8px">
+    <div style="font-size:13px;color:var(--muted2);margin-bottom:8px" id="dashExerciseCount"></div>
+    <div class="ex-preview" id="dashExPreview"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn btn-orange" style="flex:1" onclick="goToWorkout()" id="dashWorkoutBtn">START WORKOUT</button>
       <button id="moveBtn" onclick="moveWorkoutToTomorrow()" style="background:var(--bg3);border:1px solid var(--border);border-radius:13px;color:var(--muted2);font-size:12px;font-weight:700;padding:0 14px;cursor:pointer;white-space:nowrap">Move →</button>
     </div>
@@ -317,22 +342,29 @@ select{-webkit-appearance:none;appearance:none}
     <div style="font-size:13px;color:var(--muted2);margin-top:8px">Recover. Eat. Sleep. Grow.<br>Back at it tomorrow.</div>
   </div>
   <div id="workoutContent">
-    <div id="workoutTopBar" class="card" style="display:flex;align-items:center;gap:12px;padding:12px 14px">
-      <div style="flex:1">
-        <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Progress</div>
-        <div class="progress-bar-wrap" style="margin-top:5px">
-          <div class="progress-bar-fill" id="workoutProgressBar" style="width:0%"></div>
+    <div id="lastSessionBar" class="last-session-bar hidden">📊 <span id="lastSessionText"></span></div>
+    <div id="workoutTopBar" class="card" style="padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Progress</div>
+          <div class="progress-bar-wrap" style="margin-top:5px">
+            <div class="progress-bar-fill" id="workoutProgressBar" style="width:0%"></div>
+          </div>
         </div>
+        <div id="workoutProgressLabel" style="font-size:13px;font-weight:800;color:var(--orange);white-space:nowrap">0/0</div>
+        <div class="vol-tag" id="workoutVolumeTag">0 kg</div>
       </div>
-      <div id="workoutProgressLabel" style="font-size:13px;font-weight:800;color:var(--orange);white-space:nowrap">0/0</div>
-      <div class="vol-tag" id="workoutVolumeTag">0 kg</div>
+      <div class="stopwatch-bar hidden" id="stopwatchBar">
+        ⏱ <span class="stopwatch-val" id="stopwatchDisplay">0:00</span> training
+      </div>
     </div>
     <div id="exerciseList"></div>
     <div class="workout-complete-bar hidden" id="workoutCompleteCard">
-      <div style="font-size:36px">✅</div>
-      <div style="font-size:20px;font-weight:900;color:var(--green);margin-top:6px">WORKOUT COMPLETE</div>
+      <div style="font-size:40px">✅</div>
+      <div style="font-size:22px;font-weight:900;color:var(--green);margin-top:8px">WORKOUT COMPLETE</div>
       <div style="font-size:12px;color:var(--muted2);margin-top:4px" id="workoutCompleteTime"></div>
-      <div style="font-size:13px;color:var(--gold);margin-top:8px;font-weight:700" id="workoutCompleteVolume"></div>
+      <div class="complete-stats" id="workoutCompleteStats"></div>
+      <div id="workoutVolPRBanner"></div>
     </div>
   </div>
 </div>
@@ -761,6 +793,112 @@ function setDefaultRest(s){
   document.getElementById('restDefaultDisplay').textContent=s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:`${s}s`;
 }
 
+// ==================== MOTIVATIONAL MESSAGES ====================
+function getMotivational(streak){
+  if(streak===0) return 'Every legend starts at zero.';
+  if(streak===1) return 'Day one. The hardest step is done.';
+  if(streak<4)  return 'Building the habit. Don\'t stop now.';
+  if(streak<7)  return 'Almost a full week. Make it count.';
+  if(streak===7) return '🔥 One full week. You\'re different now.';
+  if(streak<14) return 'The body is adapting. Keep going.';
+  if(streak===14) return '⚡ Two weeks in. This is who you are.';
+  if(streak<21) return 'Three weeks builds a habit. Almost there.';
+  if(streak<30) return 'Most people quit here. Not you.';
+  if(streak===30) return '🥇 30 days. You\'re not the same person.';
+  if(streak<60) return 'Consistency is a superpower. You have it.';
+  if(streak===60) return '💎 Two months of relentless execution.';
+  if(streak<100) return 'Elite level. The 1% territory.';
+  return '🏆 100 days. You are the standard.';
+}
+
+// ==================== STREAK COUNT-UP ====================
+function animateStreak(target){
+  const el=document.getElementById('dashStreak');
+  if(!el) return;
+  if(target===0){el.textContent='0';return}
+  const dur=600,steps=20,inc=Math.ceil(target/steps);
+  let cur=Math.max(0,target-inc*3);
+  const interval=setInterval(()=>{
+    cur=Math.min(target,cur+inc);
+    el.textContent=cur;
+    el.classList.toggle('count-up',cur===target);
+    if(cur>=target) clearInterval(interval);
+  },dur/steps);
+}
+
+// ==================== WORKOUT STOPWATCH ====================
+let stopwatchInterval=null, stopwatchStart=null;
+
+function startStopwatch(fromTimestamp){
+  stopwatchStart=fromTimestamp?new Date(fromTimestamp):new Date();
+  const bar=document.getElementById('stopwatchBar');
+  if(bar) bar.classList.remove('hidden');
+  if(stopwatchInterval) clearInterval(stopwatchInterval);
+  stopwatchInterval=setInterval(tickStopwatch,1000);
+  tickStopwatch();
+}
+function tickStopwatch(){
+  if(!stopwatchStart) return;
+  const el=document.getElementById('stopwatchDisplay');
+  if(!el) return;
+  const elapsed=Math.floor((Date.now()-stopwatchStart)/1000);
+  const m=Math.floor(elapsed/60),s=elapsed%60;
+  el.textContent=`${m}:${String(s).padStart(2,'0')}`;
+}
+function stopStopwatch(){
+  if(stopwatchInterval){clearInterval(stopwatchInterval);stopwatchInterval=null}
+  const bar=document.getElementById('stopwatchBar');
+  if(bar) bar.classList.add('hidden');
+}
+function getWorkoutStartTime(wo){
+  if(!wo||!wo.exercises) return null;
+  const times=wo.exercises.flatMap(e=>e.sets_data||[]).filter(s=>s.done&&s.doneAt).map(s=>s.doneAt);
+  return times.length?times.reduce((a,b)=>a<b?a:b):null;
+}
+
+// ==================== COMPLETE STATS CARD ====================
+function populateCompleteStats(wo){
+  const statsEl=document.getElementById('workoutCompleteStats');
+  const bannerEl=document.getElementById('workoutVolPRBanner');
+  if(!statsEl||!wo) return;
+  // Duration
+  const startTs=getWorkoutStartTime(wo);
+  let durStr='—';
+  if(startTs&&wo.completedAt){
+    const mins=Math.round((new Date(wo.completedAt)-new Date(startTs))/60000);
+    durStr=mins>=60?`${Math.floor(mins/60)}h ${mins%60}m`:`${mins}m`;
+  }
+  // Volume
+  const vol=calcWorkoutVolume(wo);
+  const volStr=vol>0?`${vol.toLocaleString()} kg`:'—';
+  // Exercises completed
+  const exCount=wo.exercises?wo.exercises.filter(e=>e.completed).length:0;
+  statsEl.innerHTML=`
+    <div class="complete-stat count-up"><div class="complete-stat-val">${durStr}</div><div class="complete-stat-lbl">DURATION</div></div>
+    <div class="complete-stat count-up" style="animation-delay:.1s"><div class="complete-stat-val">${volStr}</div><div class="complete-stat-lbl">VOLUME</div></div>
+    <div class="complete-stat count-up" style="animation-delay:.2s"><div class="complete-stat-val">${exCount}</div><div class="complete-stat-lbl">EXERCISES</div></div>`;
+  // Volume PR banner
+  if(bannerEl){
+    const lastVol=getLastVolForWorkoutType(wo.type,getToday());
+    if(vol>0&&lastVol>0&&vol>lastVol){
+      const pct=Math.round((vol-lastVol)/lastVol*100);
+      bannerEl.innerHTML=`<div class="vol-pr-banner count-up"><span style="font-size:22px">📈</span><div><div style="font-size:13px;font-weight:900;color:#c084fc">VOLUME PR!</div><div style="font-size:11px;color:var(--muted2);margin-top:2px">+${pct}% vs last ${wo.type} session</div></div></div>`;
+    } else { bannerEl.innerHTML=''; }
+  }
+}
+
+// ==================== VOLUME PR ====================
+function getLastVolForWorkoutType(type, excludeDate){
+  const workouts=load('bgt_workouts',{});
+  const dates=Object.keys(workouts).sort((a,b)=>b.localeCompare(a));
+  for(const d of dates){
+    if(d===excludeDate) continue;
+    const w=workouts[d];
+    if(w&&w.type===type&&w.completed) return calcWorkoutVolume(w);
+  }
+  return 0;
+}
+
 // ==================== AUDIO ====================
 function playWin(){
   try{
@@ -865,23 +1003,31 @@ function renderDashboard(){
   const streak=load('bgt_streak',{current:0,longest:0});
   const workouts=load('bgt_workouts',{});
   document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  document.getElementById('dashStreak').textContent=streak.current;
+  animateStreak(streak.current);
   document.getElementById('dashStreakLabel').textContent=streak.current===1?'🔥 DAY IN A ROW':'🔥 DAYS IN A ROW';
+  document.getElementById('dashMotivational').textContent=getMotivational(streak.current);
   const daysTo100=Math.max(0,100-streak.current);
   document.getElementById('dashStreakSub').textContent=daysTo100>0?`${daysTo100} days to 100-workout milestone`:'🏆 100+ DAY LEGEND!';
   const todaySplit=getTodaySplit();
   const badgeEl=document.getElementById('dashTodayBadge'),countEl=document.getElementById('dashExerciseCount'),btnEl=document.getElementById('dashWorkoutBtn');
   const todayWo=workouts[today];
+  const previewEl=document.getElementById('dashExPreview');
   if(!todaySplit){
     badgeEl.innerHTML='<span class="workout-type-badge rest-badge">😴 REST DAY</span>';
     countEl.textContent='Recover and grow.';btnEl.textContent='VIEW REST DAY';btnEl.disabled=false;
+    if(previewEl) previewEl.innerHTML='';
   } else {
     const done=todayWo&&todayWo.completed;
     badgeEl.innerHTML=`<span class="workout-type-badge">${todaySplit.tag} — ${todaySplit.name.toUpperCase()}</span>`;
     const completedCount=todayWo?todayWo.exercises.filter(e=>e.completed).length:0;
-    countEl.textContent=done?`✅ Completed — ${todaySplit.exercises.length} exercises`:`${completedCount}/${todaySplit.exercises.length} exercises done`;
+    countEl.textContent=done?`✅ Completed — ${todaySplit.exercises.length} exercises`:`${completedCount}/${todaySplit.exercises.length} exercises`;
     btnEl.textContent=done?'✅ COMPLETED':completedCount>0?'CONTINUE WORKOUT':'START WORKOUT';
     btnEl.disabled=false;
+    if(previewEl){
+      const shown=todaySplit.exercises.slice(0,4);
+      previewEl.innerHTML=shown.map(e=>`<span class="ex-pill">${e.name}</span>`).join('')
+        +(todaySplit.exercises.length>4?`<span class="ex-pill">+${todaySplit.exercises.length-4} more</span>`:'');
+    }
   }
   // Move button — hide on rest days or completed workouts
   const moveBtn=document.getElementById('moveBtn');
@@ -1012,6 +1158,9 @@ function renderWorkoutPage(){
     save('bgt_workouts',workouts);
   }
   const todayWo=workouts[today];
+  // Last session bar
+  const lastSessionBar=document.getElementById('lastSessionBar');
+  const lastSessionText=document.getElementById('lastSessionText');
   const lastWeekData=getLastWeekSameWorkout(today,todaySplit.name);
   const listEl=document.getElementById('exerciseList');listEl.innerHTML='';
   todaySplit.exercises.forEach((ex,idx)=>{
@@ -1060,14 +1209,31 @@ function renderWorkoutPage(){
     listEl.appendChild(card);
     if(saved.completed) updateExerciseVolume(idx,saved);
   });
+  if(lastSessionBar&&lastSessionText){
+    if(lastWeekData&&lastWeekData.completed){
+      const vol=calcWorkoutVolume(lastWeekData);
+      const startTs=getWorkoutStartTime(lastWeekData);
+      const durStr=startTs&&lastWeekData.completedAt?`${Math.round((new Date(lastWeekData.completedAt)-new Date(startTs))/60000)}min`:'';
+      const dateStr=new Date(lastWeekData.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      lastSessionText.innerHTML=`Last ${todaySplit.name}: <strong>${dateStr}</strong>${vol?` · <strong>${vol.toLocaleString()} kg</strong>`:''}${durStr?` · <strong>${durStr}</strong>`:''}`;
+      lastSessionBar.classList.remove('hidden');
+    } else {
+      lastSessionBar.classList.add('hidden');
+    }
+  }
   const completeCard=document.getElementById('workoutCompleteCard');
   if(todayWo.completed){
     completeCard.classList.remove('hidden');
     const t=todayWo.completedAt?new Date(todayWo.completedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):'';
     document.getElementById('workoutCompleteTime').textContent=t?`Completed at ${t}`:'';
     document.getElementById('workoutCompleteVolume').textContent=`Total volume: ${calcWorkoutVolume(todayWo).toLocaleString()} kg`;
+    populateCompleteStats(todayWo);
+    stopStopwatch();
   } else {
     completeCard.classList.add('hidden');
+    // Start stopwatch if workout is in progress
+    const startTs=getWorkoutStartTime(todayWo);
+    if(startTs) startStopwatch(startTs);
   }
   updateWorkoutProgress();
 }
@@ -1079,6 +1245,10 @@ function completeSet(exIdx,setIdx){
   const w=parseFloat(document.getElementById(`sw-${exIdx}-${setIdx}`).value)||0;
   const r=parseInt(document.getElementById(`sr-${exIdx}-${setIdx}`).value)||0;
   ex.sets_data[setIdx]={weight:w,reps:r,done:true,doneAt:new Date().toISOString()};
+  // Start stopwatch on very first set logged in this workout
+  const anyPrev=workouts[today].exercises.some((e,ei)=>ei!==exIdx&&e.sets_data&&e.sets_data.some(s=>s.done));
+  const myPrev=ex.sets_data.filter(s=>s.done).length===1&&!anyPrev;
+  if(myPrev) startStopwatch(ex.sets_data[setIdx].doneAt);
   // propagate weight to next empty sets
   const todaySplit=getTodaySplit();const exDef=todaySplit.exercises[exIdx];
   for(let i=setIdx+1;i<exDef.sets;i++){
@@ -1102,11 +1272,30 @@ function completeSet(exIdx,setIdx){
   if(navigator.vibrate) navigator.vibrate(30);
   // Update UI
   const btn=document.getElementById(`sc-${exIdx}-${setIdx}`);
-  if(btn){btn.classList.add('checked');btn.textContent='✓';btn.disabled=true}
+  if(btn){btn.classList.add('checked');btn.textContent='✓';btn.disabled=true;btn.classList.remove('pop');void btn.offsetWidth;btn.classList.add('pop')}
   const wInp=document.getElementById(`sw-${exIdx}-${setIdx}`);
   const rInp=document.getElementById(`sr-${exIdx}-${setIdx}`);
   if(wInp){wInp.classList.add('done-inp');wInp.disabled=true}
   if(rInp){rInp.classList.add('done-inp');rInp.disabled=true}
+  // Flash the row
+  const row=document.getElementById(`set-row-${exIdx}-${setIdx}`);
+  if(row){row.classList.remove('set-row-flash');void row.offsetWidth;row.classList.add('set-row-flash')}
+  // Inline PR detection — check if this set weight beats stored PR
+  const prs=load('bgt_prs',{});
+  const exName=workouts[today].exercises[exIdx].name;
+  const existingPR=prs[exName];
+  if(w>0&&(!existingPR||w>existingPR.weight)){
+    const card=document.getElementById('excard-'+exIdx);
+    if(card){card.classList.remove('pr-row-flash');void card.offsetWidth;card.classList.add('pr-row-flash')}
+    const nameEl=card?card.querySelector('.ex-name'):null;
+    if(nameEl&&!nameEl.querySelector('.inline-pr-badge')){
+      const badge=document.createElement('span');
+      badge.className='inline-pr-badge';
+      badge.textContent=`🏆 ${w}kg PR`;
+      nameEl.appendChild(badge);
+    }
+    if(navigator.vibrate) navigator.vibrate([40,20,80]);
+  }
   if(allSetsDone){
     const card=document.getElementById('excard-'+exIdx);
     if(card){card.classList.add('done')}
@@ -1126,6 +1315,8 @@ function completeSet(exIdx,setIdx){
     document.getElementById('workoutCompleteCard').classList.remove('hidden');
     document.getElementById('workoutCompleteTime').textContent=`Completed at ${new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`;
     document.getElementById('workoutCompleteVolume').textContent=`Total volume: ${calcWorkoutVolume(workouts[today]).toLocaleString()} kg`;
+    stopStopwatch();
+    populateCompleteStats(workouts[today]);
     skipRest();
     setTimeout(()=>showCelebration(streak.current,workouts[today]),300);
   }
@@ -1173,21 +1364,62 @@ function logPR(idx){
 
 function showCelebration(streak,wo){
   const overlay=document.getElementById('celebrationOverlay');
-  document.getElementById('celebrationMsg').textContent=`🔥 ${streak} DAY STREAK`;
   const milestone=MILESTONES.find(m=>m===streak);
-  document.getElementById('celebrationSub').textContent=milestone?`🎯 MILESTONE: ${streak} consecutive workouts!`:`${100-streak} more to reach 100`;
   const vol=calcWorkoutVolume(wo);
-  document.getElementById('celebVolume').textContent=vol>0?`Volume: ${vol.toLocaleString()} kg lifted today`:'';
-  overlay.classList.remove('hidden');playWin();
+  const exCount=wo.exercises?wo.exercises.filter(e=>e.completed).length:0;
+  const startTs=getWorkoutStartTime(wo);
+  const durMins=startTs&&wo.completedAt?Math.round((new Date(wo.completedAt)-new Date(startTs))/60000):0;
+
+  // Compare to last session of same type
+  const lastVol=getLastVolForWorkoutType(wo.type,getToday());
+  const volDiff=lastVol>0?Math.round((vol-lastVol)/lastVol*100):null;
+
+  // Find any new PRs hit during this session (exercises where logged set beats stored PR)
+  const prs=load('bgt_prs',{});
+  const newPRs=wo.exercises?wo.exercises.filter(ex=>{
+    const pr=prs[ex.name];
+    if(!pr||!ex.sets_data) return false;
+    return ex.sets_data.some(s=>s.done&&s.weight&&s.weight>pr.weight);
+  }).map(ex=>ex.name):[];
+
+  // Title & icon based on streak / milestone
+  const milestoneIcons={7:'🔥',14:'⚡',30:'🥇',60:'💎',100:'🏆'};
+  const milestoneTitles={7:'7-DAY WARRIOR',14:'2-WEEK BEAST',30:'30-DAY MACHINE',60:'60-DAY LEGEND',100:'100-DAY ICON'};
+  document.getElementById('celebIcon').textContent=milestone?milestoneIcons[milestone]:'💪';
+  document.getElementById('celebTitle').textContent=milestone?milestoneTitles[milestone]:'WORKOUT\nCOMPLETE';
+  document.getElementById('celebrationMsg').textContent=`🔥 ${streak} DAY STREAK`;
+  document.getElementById('celebrationSub').textContent=milestone?`${milestone} consecutive workouts — legendary.`:`${Math.max(0,100-streak)} more to reach 100`;
+
+  // Stats grid: volume, duration, exercises, vs last
+  const statsEl=document.getElementById('celebStats');
+  const statBox=(val,lbl,color='var(--orange)')=>`<div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:12px 8px;text-align:center"><div style="font-size:20px;font-weight:900;color:${color}">${val}</div><div style="font-size:9px;color:rgba(255,255,255,0.4);font-weight:700;letter-spacing:1px;margin-top:3px">${lbl}</div></div>`;
+  let statsHtml=statBox(vol>0?`${vol.toLocaleString()} kg`:'—','VOLUME');
+  statsHtml+=statBox(durMins>0?(durMins>=60?`${Math.floor(durMins/60)}h ${durMins%60}m`:`${durMins}m`):'—','DURATION');
+  if(volDiff!==null) statsHtml+=statBox(`${volDiff>=0?'+':''}${volDiff}%`,'VS LAST',volDiff>=0?'var(--green)':'var(--red)');
+  else statsHtml+=statBox(exCount,'EXERCISES','var(--green)');
+  if(streak>0) statsHtml+=statBox(`${streak}🔥`,'STREAK','var(--gold)');
+  else statsHtml+=statBox(exCount,'EXERCISES','var(--green)');
+  statsEl.innerHTML=statsHtml;
+
+  // Highlight line — most interesting thing about this session
+  const highlightEl=document.getElementById('celebHighlight');
+  if(newPRs.length>0){
+    highlightEl.innerHTML=`🏆 New PR${newPRs.length>1?'s':''}: <strong style="color:var(--gold)">${newPRs.join(', ')}</strong>`;
+  } else if(volDiff!==null&&volDiff>0){
+    highlightEl.innerHTML=`📈 Volume up <strong style="color:var(--green)">${volDiff}%</strong> vs last ${wo.type} session`;
+  } else if(durMins>0){
+    highlightEl.innerHTML=`⏱ Done in <strong style="color:var(--orange)">${durMins} min</strong> — ${durMins<45?'efficient session':'solid work'}`;
+  } else { highlightEl.innerHTML=''; }
+
+  overlay.classList.remove('hidden');
+  playWin();
   if(navigator.vibrate) navigator.vibrate([100,50,100,50,200,100,400]);
   if(typeof confetti!=='undefined'){
     confetti({particleCount:150,spread:80,origin:{y:0.6},colors:['#FF6B00','#FFB800','#FFFFFF']});
     setTimeout(()=>confetti({particleCount:100,spread:100,origin:{y:0.5}}),400);
   }
   if(milestone){
-    const icons={7:'🔥',14:'⚡',30:'🥇',60:'💎',100:'🏆'};
-    const labels={7:'7-DAY WARRIOR!',14:'2-WEEK BEAST!',30:'30-DAY MACHINE!',60:'60-DAY LEGEND!',100:'100-DAY ICON!'};
-    setTimeout(()=>showMilestoneOverlay(icons[milestone],labels[milestone],`${milestone} consecutive workouts`),2500);
+    setTimeout(()=>showMilestoneOverlay(milestoneIcons[milestone],milestoneTitles[milestone]+'!',`${milestone} consecutive workouts`),2500);
   }
 }
 
